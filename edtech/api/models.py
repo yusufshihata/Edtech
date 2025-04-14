@@ -17,9 +17,15 @@ class Course(models.Model):
     final_deadline = models.DateField()
     student = models.ForeignKey(User, on_delete=models.PROTECT)
 
+    def __str__(self):
+        return self.name
+
 class Unit(models.Model):
     title = models.CharField(max_length=100)
-    course = models.ForeignKey(Course, on_delete=models.PROTECT)
+    course = models.ForeignKey(Course, on_delete=models.PROTECT, related_name='units')
+
+    def __str__(self):
+        return self.title
 
 
 class Task(models.Model):
@@ -28,5 +34,8 @@ class Task(models.Model):
     course = models.ForeignKey(Course, on_delete=models.PROTECT)
     deadline = models.DateField(default=timezone.now)
     done = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.title
 
 
