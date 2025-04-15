@@ -1,5 +1,7 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from rest_framework import status, permissions
+from rest_framework.authentication import SessionAuthentication, BasicAuthentication
+from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import login, logout
 from rest_framework.decorators import api_view
 from rest_framework.views import APIView
@@ -9,13 +11,18 @@ from .models import Student, Course, Unit, Task
 from .serializer import CourseSerializer, LoginSerializer, RegisterSerializer, StudentSerializer
 
 # Create your views here.
-@api_view(['GET'])
-def get_courses(render):
-    courses = Course.objects.all()
-    courses = CourseSerializer(courses, many=True)
-    data = courses.data
+class CoursesListView(APIView):
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
+    permission_classes = [IsAuthenticated]
 
-    return Response(data)
+    def get(self, request):
+        # TODO: Return all courses that are created by the authenticated user.
+        courses = Course.objects.filter(student=request.user)
+        courses = CourseSerializer(courses, many=True)
+        data = courses.data
+
+        return Response(data)
+
 
 @api_view(['GET'])
 def get_course_by_id(render, course_id):
@@ -27,39 +34,58 @@ def get_course_by_id(render, course_id):
 
 class RegisterView(APIView):
     permission_classes = [permissions.AllowAny]
-
-    def post(self, request, *args, **kwargs):
+    
+    def get(self, request):
+        # Render the registration form
+        return render(request, 'register.html')
+    
+    def post(self, request):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
+            
+            # Log the user in after registration
+            login(request, user)
+            
+            # Redirect to user dashboard
+            return redirect('user-detail')
+        
+        # If validation fails, render the form again with errors
+        return render(request, 'register.html', {'errors': serializer.errors})
 
-            user_data = StudentSerializer(user).data
-            return Response(user_data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class LoginView(APIView):
     permission_classes = [permissions.AllowAny]
-
-    def post(self, request, *args, **kwargs):
+    
+    def get(self, request):
+        return render(request, 'login.html')
+    
+    def post(self, request):
         serializer = LoginSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
             user = serializer.validated_data['user']
             login(request, user)
-            user_data = StudentSerializer(user).data
-            return Response(user_data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return redirect('user-detail')
+        
+        return render(request, 'login.html', {'errors': serializer.errors})
+
 
 class LogoutView(APIView):
     permission_classes = [permissions.IsAuthenticated]
-
-    def post(self, request, *args, **kwargs):
+    
+    def get(self, request):
         logout(request)
-        return Response({'details': 'Successfully logged out.'}, status=status.HTTP_200_OK)
+        request.session.flush()
+        response = redirect('login')
+        response.delete_cookie('sessionid')
+        return response
+
+
 
 class UserDetailView(APIView):
     permission_classes = [permissions.IsAuthenticated]
-
-    def get(self, request, *args, **kwargs):
-        serializer = StudentSerializer(request.user)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    def get(self, request):
+        user_data = StudentSerializer(request.user).data
+        return render(request, 'user_detail.html', {'user': user_data})
 

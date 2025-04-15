@@ -20,9 +20,10 @@ class UnitSerializer(serializers.ModelSerializer):
 
 class CourseSerializer(serializers.ModelSerializer):
     units = UnitSerializer(many=True, read_only=True)
+    student = StudentSerializer(many=False, read_only=True)
     class Meta:
         model = Course
-        fields = ['name', 'mid_deadline', 'final_deadline', 'units']
+        fields = ['name', 'mid_deadline', 'final_deadline', 'units', 'student']
 
 
 class TaskSerializer(serializers.ModelSerializer):
@@ -58,7 +59,6 @@ class RegisterSerializer(serializers.Serializer):
 
     @transaction.atomic
     def create(self, validated_data):
-        """Create and return a new user and their student profile."""
         birth_date = validated_data.pop('birth_date')
 
         validated_data.pop('password2')

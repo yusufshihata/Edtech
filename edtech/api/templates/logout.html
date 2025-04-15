@@ -1,0 +1,45 @@
+<!-- templates/login.html -->
+{% extends 'base.html' %}
+
+{% block title %}Login - Student Portal{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Welcome Back</h2>
+        <p>Login to access your student dashboard.</p>
+    </div>
+    
+    {% if errors %}
+    <div class="alert alert-error">
+        <ul>
+            {% for field, field_errors in errors.items %}
+                {% for error in field_errors %}
+                    <li>{{ field }}: {{ error }}</li>
+                {% endfor %}
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+    
+    <form method="post" action="{% url 'login' %}">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label for="username" class="form-label">Username</label>
+            <input type="text" id="username" name="username" class="form-control" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="password" class="form-label">Password</label>
+            <input type="password" id="password" name="password" class="form-control" required>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Login</button>
+    </form>
+    
+    <div class="text-center mt-4">
+        <p>Don't have an account? <a href="{% url 'register' %}">Register here</a></p>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,41 @@
+<!-- templates/user_detail.html -->
+{% extends 'base.html' %}
+
+{% block title %}My Profile - Student Portal{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Your Profile</h2>
+        <p>Welcome back, {{ user.username }}!</p>
+    </div>
+    
+    <div class="user-details">
+        <div class="form-group">
+            <label class="form-label">Username</label>
+            <p>{{ user.username }}</p>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Email</label>
+            <p>{{ user.email }}</p>
+        </div>
+        
+        {% if user.first_name or user.last_name %}
+        <div class="form-group">
+            <label class="form-label">Name</label>
+            <p>{{ user.first_name }} {{ user.last_name }}</p>
+        </div>
+        {% endif %}
+        
+        <div class="form-group">
+            <label class="form-label">Date Joined</label>
+            <p>{{ user.date_joined|date:"F j, Y" }}</p>
+        </div>
+    </div>
+    
+    <div class="mt-4">
+        <a href="{% url 'logout' %}" class="btn btn-secondary">Logout</a>
+    </div>
+</div>
+{% endblock %}

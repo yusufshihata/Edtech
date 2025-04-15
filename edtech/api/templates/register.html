@@ -1,0 +1,73 @@
+<!-- templates/register.html -->
+{% extends 'base.html' %}
+
+{% block title %}Register - Student Portal{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title text-center">Create Your Account</h2>
+    </div>
+
+    <form method="post" action="{% url 'register' %}"> {# Ensure 'register' is the name of your registration view URL #}
+        {% csrf_token %} {# Essential for security! #}
+
+        {# Display messages passed from the view (e.g., for errors after submission) #}
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-info{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        {# Username Field #}
+        <div class="form-group">
+            <label for="id_username" class="form-label">Username</label>
+            <input type="text" name="username" id="id_username" class="form-control" required>
+            {# You might add a placeholder for errors passed from the view context if needed #}
+            {# {% if username_error %}<div class="error">{{ username_error }}</div>{% endif %} #}
+        </div>
+
+        {# Email Field #}
+        <div class="form-group">
+            <label for="id_email" class="form-label">Email</label>
+            <input type="email" name="email" id="id_email" class="form-control" required>
+            {# {% if email_error %}<div class="error">{{ email_error }}</div>{% endif %} #}
+        </div>
+
+        {# Password Field #}
+        <div class="form-group">
+            <label for="id_password" class="form-label">Password</label>
+            <input type="password" name="password" id="id_password" class="form-control" required>
+            {# {% if password_error %}<div class="error">{{ password_error }}</div>{% endif %} #}
+        </div>
+
+        {# Password Confirmation Field #}
+        <div class="form-group">
+            <label for="id_password2" class="form-label">Confirm Password</label>
+            <input type="password" name="password2" id="id_password2" class="form-control" required>
+             {# You might add a specific error message div for password mismatch here #}
+             {# {% if password_mismatch_error %}<div class="error">{{ password_mismatch_error }}</div>{% endif %} #}
+        </div>
+
+        {# Birthdate Field #}
+        <div class="form-group">
+            <label for="id_birth_date" class="form-label">Birth Date</label>
+            {# Using type="date" provides a browser-native date picker #}
+            {# Format expected by backend might vary, usually 'YYYY-MM-DD' #}
+            <input type="date" name="birth_date" id="id_birth_date" class="form-control" required>
+            {# {% if birth_date_error %}<div class="error">{{ birth_date_error }}</div>{% endif %} #}
+        </div>
+
+        <div class="form-group text-center">
+            <button type="submit" class="btn btn-primary">Register</button>
+        </div>
+    </form>
+
+    <p class="mt-4 text-center">
+        Already have an account? <a href="{% url 'login' %}">Login here</a>
+    </p>
+</div>
+
+{% endblock %}
