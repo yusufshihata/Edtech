@@ -3,6 +3,7 @@ from django.db import transaction
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 from .models import Student, Unit, Course, Task
+from django.utils import timezone
 
 class StudentSerializer(serializers.ModelSerializer):
     birth_date = serializers.DateField(source='student.birth_date', read_only=True)
@@ -24,6 +25,31 @@ class CourseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Course
         fields = ['name', 'mid_deadline', 'final_deadline', 'units', 'student']
+
+        def validate_mid_deadline(self, value):
+            if value and value < timezone.now().date():
+                raise serializers.ValidationError("Midterm deadline cannot be in the past.")
+            return value
+
+        def validate_final_deadline(self, value):
+            if value and value < timezone.now().date():
+                raise serializers.ValidationError("Final deadline cannot be in the past.")
+            return value
+
+        def validate(self, data):
+            student = self.context.get('student')
+
+            if not student:
+                raise serializers.ValidationError("Student Context is missing for validation.")
+
+            course_name = data.get('name')
+
+            query = Course.objects.filter(user=student, name=course_name)
+
+            if query.exists():
+                raise serializers.ValidationError(f"You're already have a course with the name {course_name}")
+            
+            return data
 
 
 class TaskSerializer(serializers.ModelSerializer):

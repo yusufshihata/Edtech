@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from rest_framework.renderers import JSONRenderer
 from .models import Student, Course, Unit, Task
 from .serializer import CourseSerializer, LoginSerializer, RegisterSerializer, StudentSerializer
+from .forms import CourseForm
 
 # Create your views here.
 class CoursesListView(APIView):
@@ -16,13 +17,49 @@ class CoursesListView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        # TODO: Return all courses that are created by the authenticated user.
         courses = Course.objects.filter(student=request.user)
         courses = CourseSerializer(courses, many=True)
         data = courses.data
 
         return Response(data)
 
+    def post(self, request):
+        student = request.user
+        form = CourseForm(request.data, user=student)
+
+        if form.is_valid():
+            name = form.cleaned_data['name']
+            mid_deadline = form.cleaned_data['mid_deadline']
+            final_deadline = form.cleaned_data['final_deadline']
+
+            course = Course.objects.create(
+                student=student,
+                name=name,
+                mid_deadline=mid_deadline,
+                final_deadline=final_deadline
+            )
+
+            course = CourseSerializer(course)
+
+            return Response(course.data, status=status.HTTP_201_CREATED)
+        return Response(form.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class CourseDetailView(APIView):
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, course_id):
+        try:
+            course = Course.objects.get(id=course_id, student=request.user)
+        except:
+            raise ValueError("this is not your course")
+        course = CourseSerializer(course)
+        data = course.data
+        return Response(data)
+
+    def delete(self, request):
+        pass
 
 @api_view(['GET'])
 def get_course_by_id(render, course_id):
