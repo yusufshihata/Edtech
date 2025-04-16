@@ -76,13 +76,6 @@ class CourseDetailView(APIView):
 
         return Response(status=HTTP_204_NO_CONTENT)
 
-@api_view(['GET'])
-def get_course_by_id(render, course_id):
-    course = Course.objects.get(id=course_id)
-    course = CourseSerializer(course)
-
-    data = course.data
-    return Response(data)
 
 class RegisterView(APIView):
     permission_classes = [permissions.AllowAny]
