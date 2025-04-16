@@ -56,6 +56,20 @@ class CourseDetailView(APIView):
         data = course.data
         return Response(data)
 
+    def patch(self, request, course_id):
+        course = get_object_or_404(Course, id=course_id, student=request.user)
+
+        serializer = CourseSerializer(
+            instance=course,
+            data=request.data,
+            partial=True,
+            context={'request':request}
+        )
+
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return Response(serializer.data)
+
     def delete(self, request, course_id):
         course = get_object_or_404(Course, id=course_id, student=request.user)
         course.delete()
