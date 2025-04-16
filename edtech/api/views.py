@@ -10,6 +10,7 @@ from rest_framework.renderers import JSONRenderer
 from .models import Student, Course, Unit, Task
 from .serializer import CourseSerializer, LoginSerializer, RegisterSerializer, StudentSerializer
 from .forms import CourseForm
+from django.shortcuts import get_object_or_404
 
 # Create your views here.
 class CoursesListView(APIView):
@@ -50,16 +51,16 @@ class CourseDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, course_id):
-        try:
-            course = Course.objects.get(id=course_id, student=request.user)
-        except:
-            raise ValueError("this is not your course")
+        course = get_object_or_404(Course, id=course_id, student=request.user)
         course = CourseSerializer(course)
         data = course.data
         return Response(data)
 
-    def delete(self, request):
-        pass
+    def delete(self, request, course_id):
+        course = get_object_or_404(Course, id=course_id, student=request.user)
+        course.delete()
+
+        return Response(status=HTTP_204_NO_CONTENT)
 
 @api_view(['GET'])
 def get_course_by_id(render, course_id):
