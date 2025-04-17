@@ -76,6 +76,28 @@ class CourseDetailView(APIView):
 
         return Response(status=HTTP_204_NO_CONTENT)
 
+class UnitsListView(APIView):
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, course_id):
+        pass
+    
+    def post(self, request, course_id):
+        pass
+
+class UnitDetailView(APIView):
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        pass
+
+    def patch(self, request):
+        pass
+
+    def delete(self, request):
+        pass
 
 class RegisterView(APIView):
     permission_classes = [permissions.AllowAny]
