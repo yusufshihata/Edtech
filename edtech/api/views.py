@@ -183,13 +183,39 @@ class TaskDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, course_id, unit_id, task_id):
-        pass
+        student = request.user
+        course = get_object_or_404(Course, id=course_id, student=student)
+        unit = get_object_or_404(Unit, id=unit_id, course=course)
+        task = Task.objects.get(id=task_id, unit=unit)
+        task = TaskSerializer(task)
+        return Response(task.data)
 
     def patch(self, request, course_id, unit_id, task_id):
-        pass
+        student = request.user
+        course = get_object_or_404(Course, id=course_id, student=student)
+        unit = get_object_or_404(Unit, id=unit_id, course=course)
+        task = Task.objects.get(id=task_id, unit=unit)
+
+        serializer = TaskSerializer(
+            instance=task,
+            data=request.data,
+            partial=True,
+            context={'request': request}
+        )
+
+        if serializer.is_valid():
+            serializer.save()
+
+            return Response(serializer.data)
 
     def delete(self, request, course_id, unit_id, task_id):
-        pass
+        student = request.user
+        course = get_object_or_404(Course, id=course_id, student=student)
+        unit = get_object_or_404(Unit, id=unit_id, course=course)
+        task = Task.objects.get(id=task_id, unit=unit)
+        task.delete()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 class RegisterView(APIView):
     permission_classes = [permissions.AllowAny]

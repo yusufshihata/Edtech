@@ -10,6 +10,7 @@ urlpatterns = [
     path('student/', views.UserDetailView.as_view(), name='user-detail'),
     path('courses/<int:course_id>/units/', views.UnitsListView.as_view(), name='units'),
     path('courses/<int:course_id>/units/<int:unit_id>/', views.UnitDetailView.as_view(), name='unit-detail'),
-    path('courses/<int:course_id>/units/<int:unit_id>/tasks/', views.TasksListView.as_view(), name='tasks')
+    path('courses/<int:course_id>/units/<int:unit_id>/tasks/', views.TasksListView.as_view(), name='tasks'),
+    path('courses/<int:course_id>/units/<int:unit_id>/tasks/<int:task_id>/', views.TaskDetailView.as_view(), name='task-details')
 ]
 
