@@ -8,8 +8,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.renderers import JSONRenderer
 from .models import Student, Course, Unit, Task
-from .serializer import CourseSerializer, LoginSerializer, RegisterSerializer, StudentSerializer
-from .forms import CourseForm
+from .serializer import CourseSerializer, LoginSerializer, RegisterSerializer, StudentSerializer, UnitSerializer
+from .forms import CourseForm, UnitForm
 from django.shortcuts import get_object_or_404
 
 # Create your views here.
@@ -74,30 +74,71 @@ class CourseDetailView(APIView):
         course = get_object_or_404(Course, id=course_id, student=request.user)
         course.delete()
 
-        return Response(status=HTTP_204_NO_CONTENT)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 class UnitsListView(APIView):
     authentication_classes = [SessionAuthentication, BasicAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get(self, request, course_id):
-        pass
+        course = get_object_or_404(Course, id=course_id, student=request.user)
+        units = Unit.objects.filter(course=course)
+        units = UnitSerializer(units, many=True)
+        data = units.data
+
+        return Response(data)
     
     def post(self, request, course_id):
-        pass
+        student = request.user
+        course = Course.objects.get(id=course_id)
+        form = UnitForm(request.data, user=student, course=course)
+
+        if form.is_valid():
+            title = form.cleaned_data['title']
+
+            unit = Unit.objects.create(
+                title=title,
+                course=course
+            )
+
+            unit = UnitSerializer(unit)
+
+            return Response(unit.data, status=status.HTTP_201_CREATED)
+        return Response(form.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class UnitDetailView(APIView):
     authentication_classes = [SessionAuthentication, BasicAuthentication]
     permission_classes = [IsAuthenticated]
 
-    def get(self, request):
-        pass
+    def get(self, request, course_id, unit_id):
+        course = get_object_or_404(Course, id=course_id, student=request.user)
+        unit = get_object_or_404(Unit, course=course, id=unit_id)
+        unit = UnitSerializer(unit)
 
-    def patch(self, request):
-        pass
+        return Response(unit.data)
 
-    def delete(self, request):
-        pass
+    def patch(self, request, course_id, unit_id):
+        unit = get_object_or_404(Unit, id=unit_id)
+
+        serializer = UnitSerializer(
+            instance=unit,
+            data=request.data,
+            partial=True,
+            context={'request':request}
+        )
+
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return Response(serializer.data)
+
+
+
+    def delete(self, request, course_id, unit_id):
+        unit = get_object_or_404(Unit, id=unit_id)
+        unit.delete()
+
+        return Response({"context": "Unit deleted successfully"})
 
 class RegisterView(APIView):
     permission_classes = [permissions.AllowAny]

@@ -1,6 +1,6 @@
 from django import forms
 from django.utils import timezone
-from .models import Course
+from .models import Course, Unit
 
 class CourseForm(forms.Form):
     name = forms.CharField(max_length=100)
@@ -29,3 +29,30 @@ class CourseForm(forms.Form):
 
         if Course.objects.filter(name=cleaned_data.get('name'), student=student).exists():
             raise forms.ValidationError({"duplication": f"You already have a course with the name {cleaned_data.get('name')}"})
+
+class UnitForm(forms.Form):
+    title = forms.CharField(max_length=100)
+
+    def __init__(self, *args, **kwargs):
+        self.student = kwargs.pop('user', None)
+        self.course = kwargs.pop('course', None)
+
+        super().__init__(*args, **kwargs)
+
+        if not self.course:
+            raise ValueError({"course": "can't find a course"})
+
+        if self.course.student != self.student:
+            raise ValueError({"auth_error": "can't find authentication tokens"})
+
+    def clean(self):
+        cleaned_data = super().clean()
+        student = self.student
+        course = self.course
+
+        if Unit.objects.filter(title=cleaned_data.get('title'), course=course).exists():
+            raise forms.ValidationError(f"You already have a course with the name {cleaned_data.get('title')}")
+
+        if not Course.objects.filter(name=course.name, student=student).exists():
+            raise forms.ValidationError({"authorization": "You're not authorized to do this."})
+
