@@ -8,8 +8,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.renderers import JSONRenderer
 from .models import Student, Course, Unit, Task
-from .serializer import CourseSerializer, LoginSerializer, RegisterSerializer, StudentSerializer, UnitSerializer
-from .forms import CourseForm, UnitForm
+from .serializer import CourseSerializer, LoginSerializer, RegisterSerializer, StudentSerializer, UnitSerializer, TaskSerializer
+from .forms import CourseForm, UnitForm, TaskForm
 from django.shortcuts import get_object_or_404
 
 # Create your views here.
@@ -119,7 +119,8 @@ class UnitDetailView(APIView):
         return Response(unit.data)
 
     def patch(self, request, course_id, unit_id):
-        unit = get_object_or_404(Unit, id=unit_id)
+        course = get_object_or_404(Course, id=course_id, student=request.user)
+        unit = get_object_or_404(Unit, id=unit_id, course=course)
 
         serializer = UnitSerializer(
             instance=unit,
@@ -139,6 +140,56 @@ class UnitDetailView(APIView):
         unit.delete()
 
         return Response({"context": "Unit deleted successfully"})
+
+class TasksListView(APIView):
+    authentication_classes = [BasicAuthentication, SessionAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, course_id, unit_id):
+        course = get_object_or_404(Course, id=course_id, student=request.user)
+        unit = get_object_or_404(Unit, id=unit_id, course=course)
+        tasks = Task.objects.filter(unit=unit)
+        tasks = TaskSerializer(tasks, many=True)
+        data = tasks.data
+
+        return Response(data)
+
+    def post(self, request, course_id, unit_id):
+        student = request.user
+        course = get_object_or_404(Course, id=course_id, student=student)
+        unit = get_object_or_404(Unit, id=unit_id, course=course)
+        form = TaskForm(request.data, course=course, unit=unit)
+
+        if form.is_valid():
+            title = form.cleaned_data['title']
+            deadline = form.cleaned_data['deadline']
+            done = False
+
+            task = Task.objects.create(
+                title=title,
+                deadline=deadline,
+                done=done,
+                course=course,
+                unit=unit
+            )
+
+            task = TaskSerializer(task)
+
+            return Response(task.data, status=status.HTTP_201_CREATED)
+        return Response(form.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class TaskDetailView(APIView):
+    authentication_classes = [BasicAuthentication, SessionAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, course_id, unit_id, task_id):
+        pass
+
+    def patch(self, request, course_id, unit_id, task_id):
+        pass
+
+    def delete(self, request, course_id, unit_id, task_id):
+        pass
 
 class RegisterView(APIView):
     permission_classes = [permissions.AllowAny]

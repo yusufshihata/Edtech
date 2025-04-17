@@ -1,6 +1,6 @@
 from django import forms
 from django.utils import timezone
-from .models import Course, Unit
+from .models import Course, Unit, Task
 
 class CourseForm(forms.Form):
     name = forms.CharField(max_length=100)
@@ -55,4 +55,24 @@ class UnitForm(forms.Form):
 
         if not Course.objects.filter(name=course.name, student=student).exists():
             raise forms.ValidationError({"authorization": "You're not authorized to do this."})
+
+class TaskForm(forms.Form):
+    title = forms.CharField(max_length=100)
+    deadline = forms.DateField(required=False)
+
+    def __init__(self, *args, **kwargs):
+        self.course = kwargs.pop('course', None)
+        self.unit = kwargs.pop('unit', None)
+
+        super().__init__(*args, **kwargs)
+
+        if not (self.course and self.unit):
+            raise ValueError("There is no course or unit in here.")
+
+    def clean(self):
+        cleaned_data = super().clean()
+        unit = self.unit
+
+        if Task.objects.filter(title=cleaned_data.get('title'), unit=unit).exists():
+            raise forms.ValidationError(f"You already have a task with the name {cleaned_data.get('title')}")
 
