@@ -8,11 +8,10 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.renderers import JSONRenderer
 from .models import Student, Course, Unit, Task
-from .serializer import CourseSerializer, LoginSerializer, RegisterSerializer, StudentSerializer, UnitSerializer, TaskSerializer
+from .serializers import CourseSerializer, LoginSerializer, RegisterSerializer, StudentSerializer, UnitSerializer, TaskSerializer
 from .forms import CourseForm, UnitForm, TaskForm
 from django.shortcuts import get_object_or_404
 
-# Create your views here.
 class CoursesListView(APIView):
     authentication_classes = [SessionAuthentication, BasicAuthentication]
     permission_classes = [IsAuthenticated]
