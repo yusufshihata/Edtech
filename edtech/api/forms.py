@@ -110,7 +110,8 @@ class CourseForm(BaseForm):
         return cleaned_data
 
 class UnitForm(BaseForm):
-    required_context = ['user', 'course']
+    required_context = ['course']
+    model = Unit
     title = forms.CharField(max_length=100)
     context_to_field_map = {'user': 'student', 'course': 'course'}
 
@@ -139,7 +140,8 @@ class UnitForm(BaseForm):
         return cleaned_data
 
 class TaskForm(BaseForm):
-    required_context = ['user', 'course', 'unit']
+    model = Task
+    required_context = ['course', 'unit']
     context_to_field_map = {'user': 'student', 'course': 'course', 'unit': 'unit'}
     
     title = forms.CharField(max_length=100)
