@@ -113,16 +113,11 @@ class UnitForm(BaseForm):
     required_context = ['course']
     model = Unit
     title = forms.CharField(max_length=100)
-    context_to_field_map = {'user': 'student', 'course': 'course'}
+    context_to_field_map = {'course': 'course'}
 
     def clean(self):
         cleaned_data = super().clean()
-        student = self.context['user']
         course = self.context['course']
-
-        # User Authorization Check
-        if course.student != student:
-            self.add_error(None, "You're not Authorized to perform this operation.")
 
         # Validate deadline if provided
         if deadline := cleaned_data.get('deadline'):
@@ -141,21 +136,15 @@ class UnitForm(BaseForm):
 
 class TaskForm(BaseForm):
     model = Task
-    required_context = ['course', 'unit']
-    context_to_field_map = {'user': 'student', 'course': 'course', 'unit': 'unit'}
+    required_context = ['unit', 'course']
+    context_to_field_map = {'course': 'course', 'unit': 'unit'}
     
     title = forms.CharField(max_length=100)
     deadline = forms.DateField(required=False)
 
     def clean(self):
         cleaned_data = super().clean()
-        student = self.context['user']
-        course = self.context['course']
         unit = self.context['unit']
-
-        # User Authorization Check
-        if course.student != student:
-            self.add_error(None, "You're not Authroized to perform this operation.")
 
         # Unique task validation
         self._validate_unique(
