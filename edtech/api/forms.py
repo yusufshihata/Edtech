@@ -1,77 +1,7 @@
 from django import forms
 from django.utils import timezone
-from django.core.exceptions import ValidationError
+from core.base_forms import BaseForm
 from .models import Course, Unit, Task
-
-class BaseForm(forms.Form):
-    """Base form with common functionality for context handling and validation"""
-    required_context = []
-    model = None
-    context_to_field_map = {}  # Corrected spelling
-
-    def __init__(self, *args, **kwargs):
-        self.instance = kwargs.pop('instance', None)
-        self.context = {var: kwargs.pop(var, None) for var in self.required_context}
-        data = kwargs.pop('data', None)
-        if data is None and args:
-            data = args[0]
-            args = args[1:]
-        initial = kwargs.pop('initial', None)
-        if self.instance and initial is None:
-            initial = forms.models.model_to_dict(self.instance)
-        
-        super().__init__(data=data, initial=initial, *args, **kwargs)
-        self._validate_context()
-
-    def _validate_context(self):
-        """Helper method to ensure that context variables are present"""
-        for var in self.required_context:
-            if self.context.get(var) is None:
-                raise ValueError(f"Missing required context variable: {var}")
-
-    # The rest of the methods remain unchanged
-    def _validate_unique(self, model, filters, error_message, field=None, exclude_instance=True):
-        """Helper method for unique validation"""
-        queryset = model.objects.filter(**filters)
-        if self.instance and self.instance.pk and exclude_instance:
-            queryset = queryset.exclude(pk=self.instance.pk)
-
-        if queryset.exists():
-            error = ValidationError(error_message)
-            if field:
-                self.add_error(field, error)
-            else:
-                self.add_error(None, error)
-
-    def is_valid(self):
-        return super().is_valid()
-    
-    def save(self, commit=True):
-        if not self.model:
-            raise TypeError("Subclass must define a model.")
-        if not hasattr(self, 'cleaned_data'):
-            raise ValueError("Form not validated")
-
-        data_to_save = self.cleaned_data.copy()
-
-        # Map context variables to model fields
-        for context_key, model_field in self.context_to_field_map.items():
-            if context_key in self.context:
-                data_to_save[model_field] = self.context[context_key]
-
-        if self.instance and self.instance.pk:
-            # Update existing instance
-            for field, value in data_to_save.items():
-                setattr(self.instance, field, value)
-            instance = self.instance
-        else:
-            # Create new instance with context variables
-            instance = self.model(**data_to_save)
-            self.instance = instance
-
-        if commit:
-            instance.save()
-        return instance
 
 class CourseForm(BaseForm):
     required_context = ['user']
