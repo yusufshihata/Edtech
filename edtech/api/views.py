@@ -12,209 +12,121 @@ from .serializers import CourseSerializer, LoginSerializer, RegisterSerializer, 
 from .forms import CourseForm, UnitForm, TaskForm
 from django.shortcuts import get_object_or_404
 
-class CoursesListView(APIView):
+class BaseListView(APIView):
+    """Base Class for the List Views in the API"""
     authentication_classes = [SessionAuthentication, BasicAuthentication]
     permission_classes = [IsAuthenticated]
+    model = None
+    serializer_class = None
+    form_class = None
+    parent_models = []
 
-    def get(self, request):
-        courses = Course.objects.filter(student=request.user)
-        courses = CourseSerializer(courses, many=True)
-        data = courses.data
-
-        return Response(data)
-
-    def post(self, request):
-        student = request.user
-        form = CourseForm(request.data, user=student)
-
-        if form.is_valid():
-            name = form.cleaned_data['name']
-            mid_deadline = form.cleaned_data['mid_deadline']
-            final_deadline = form.cleaned_data['final_deadline']
-
-            course = Course.objects.create(
-                student=student,
-                name=name,
-                mid_deadline=mid_deadline,
-                final_deadline=final_deadline
-            )
-
-            course = CourseSerializer(course)
-
-            return Response(course.data, status=status.HTTP_201_CREATED)
-        return Response(form.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-class CourseDetailView(APIView):
-    authentication_classes = [SessionAuthentication, BasicAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, course_id):
-        course = get_object_or_404(Course, id=course_id, student=request.user)
-        course = CourseSerializer(course)
-        data = course.data
-        return Response(data)
-
-    def patch(self, request, course_id):
-        course = get_object_or_404(Course, id=course_id, student=request.user)
-
-        serializer = CourseSerializer(
-            instance=course,
-            data=request.data,
-            partial=True,
-            context={'request':request}
-        )
-
-        if serializer.is_valid(raise_exception=True):
-            serializer.save()
-            return Response(serializer.data)
-
-    def delete(self, request, course_id):
-        course = get_object_or_404(Course, id=course_id, student=request.user)
-        course.delete()
-
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-class UnitsListView(APIView):
-    authentication_classes = [SessionAuthentication, BasicAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, course_id):
-        course = get_object_or_404(Course, id=course_id, student=request.user)
-        units = Unit.objects.filter(course=course)
-        units = UnitSerializer(units, many=True)
-        data = units.data
-
-        return Response(data)
+    def get_queryset(self, request, *args, **kwargs):
+        """Get the queryset filtered by user"""
+        return self.model.objects.filter(student=request.user)
     
-    def post(self, request, course_id):
-        student = request.user
-        course = Course.objects.get(id=course_id)
-        form = UnitForm(request.data, user=student, course=course)
-
+    def get(self, request, *args, **kwargs):
+        queryset = self.get_queryset(request, *args, **kwargs)
+        serializer = self.serializer_class(queryset, many=True)
+        return Response(serializer.data)
+    
+    def post(self, request, *args, **kwargs):
+        form = self.form_class(request.data, user=request.user, **self.get_form_context())
         if form.is_valid():
-            title = form.cleaned_data['title']
-
-            unit = Unit.objects.create(
-                title=title,
-                course=course
-            )
-
-            unit = UnitSerializer(unit)
-
-            return Response(unit.data, status=status.HTTP_201_CREATED)
+            instance = form.save()
+            serializer = self.serializer_class(instance)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(form.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def get_form_context(self):
+        """Get additional context for form initialization"""
+        context = {}
+        for param, model in self.parent_models:
+            obj = get_object_or_404(model, id=self.kwargs.get(f'{param}_id'), student=self.request.user)
+            context[param] = obj
+        return context
 
-
-class UnitDetailView(APIView):
+class BaseDetailView(APIView):
     authentication_classes = [SessionAuthentication, BasicAuthentication]
     permission_classes = [IsAuthenticated]
+    model = None
+    serializer_class = None
+    related_models = []
 
-    def get(self, request, course_id, unit_id):
-        course = get_object_or_404(Course, id=course_id, student=request.user)
-        unit = get_object_or_404(Unit, course=course, id=unit_id)
-        unit = UnitSerializer(unit)
+    def get_object(self, **filters):
+        """Get object with permission check"""
+        # Handle nested relationships
+        query_filters = {'student': self.request.user}
+        for relation in self.related_models:
+            param = f'{relation}_id'
+            model = globals()[relation.capitalize()]
+            query_filters[relation] = get_object_or_404(model, id=self.kwargs.get(param))
+        
+        query_filters.update(filters)
+        return get_object_or_404(self.model, **query_filters)
 
-        return Response(unit.data)
+    def get(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.serializer_class(instance)
+        return Response(serializer.data)
 
-    def patch(self, request, course_id, unit_id):
-        course = get_object_or_404(Course, id=course_id, student=request.user)
-        unit = get_object_or_404(Unit, id=unit_id, course=course)
-
-        serializer = UnitSerializer(
-            instance=unit,
-            data=request.data,
-            partial=True,
-            context={'request':request}
-        )
-
-        if serializer.is_valid(raise_exception=True):
-            serializer.save()
-            return Response(serializer.data)
-
-
-
-    def delete(self, request, course_id, unit_id):
-        unit = get_object_or_404(Unit, id=unit_id)
-        unit.delete()
-
-        return Response({"context": "Unit deleted successfully"})
-
-class TasksListView(APIView):
-    authentication_classes = [BasicAuthentication, SessionAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, course_id, unit_id):
-        course = get_object_or_404(Course, id=course_id, student=request.user)
-        unit = get_object_or_404(Unit, id=unit_id, course=course)
-        tasks = Task.objects.filter(unit=unit)
-        tasks = TaskSerializer(tasks, many=True)
-        data = tasks.data
-
-        return Response(data)
-
-    def post(self, request, course_id, unit_id):
-        student = request.user
-        course = get_object_or_404(Course, id=course_id, student=student)
-        unit = get_object_or_404(Unit, id=unit_id, course=course)
-        form = TaskForm(request.data, course=course, unit=unit)
-
-        if form.is_valid():
-            title = form.cleaned_data['title']
-            deadline = form.cleaned_data['deadline']
-            done = False
-
-            task = Task.objects.create(
-                title=title,
-                deadline=deadline,
-                done=done,
-                course=course,
-                unit=unit
-            )
-
-            task = TaskSerializer(task)
-
-            return Response(task.data, status=status.HTTP_201_CREATED)
-        return Response(form.errors, status=status.HTTP_400_BAD_REQUEST)
-
-class TaskDetailView(APIView):
-    authentication_classes = [BasicAuthentication, SessionAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, course_id, unit_id, task_id):
-        student = request.user
-        course = get_object_or_404(Course, id=course_id, student=student)
-        unit = get_object_or_404(Unit, id=unit_id, course=course)
-        task = Task.objects.get(id=task_id, unit=unit)
-        task = TaskSerializer(task)
-        return Response(task.data)
-
-    def patch(self, request, course_id, unit_id, task_id):
-        student = request.user
-        course = get_object_or_404(Course, id=course_id, student=student)
-        unit = get_object_or_404(Unit, id=unit_id, course=course)
-        task = Task.objects.get(id=task_id, unit=unit)
-
-        serializer = TaskSerializer(
-            instance=task,
+    def patch(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.serializer_class(
+            instance=instance,
             data=request.data,
             partial=True,
             context={'request': request}
         )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
 
-        if serializer.is_valid():
-            serializer.save()
-
-            return Response(serializer.data)
-
-    def delete(self, request, course_id, unit_id, task_id):
-        student = request.user
-        course = get_object_or_404(Course, id=course_id, student=student)
-        unit = get_object_or_404(Unit, id=unit_id, course=course)
-        task = Task.objects.get(id=task_id, unit=unit)
-        task.delete()
-
+    def delete(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class CoursesListView(BaseListView):
+    model = Course
+    serializer_class = CourseSerializer
+    form_class = CourseForm
+
+class CourseDetailView(BaseDetailView):
+    model = Course
+    serializer_class = CourseSerializer
+
+class UnitsListView(BaseListView):
+    model = Unit
+    serializer_class = UnitSerializer
+    form_class = UnitForm
+    parent_models = [('course', Course)]
+
+    def get_queryset(self, request, *args, **kwargs):
+        course = get_object_or_404(Course, id=kwargs.get('course_id'), student=request.user)
+        return Unit.objects.filter(course=course)
+
+class UnitDetailView(BaseDetailView):
+    model = Unit
+    serializer_class = UnitSerializer
+    related_models = ['course']
+
+class TasksListView(BaseListView):
+    model = Task
+    serializer_class = TaskSerializer
+    form_class = TaskForm
+    parent_models = [('course', Course), ('unit', Unit)]
+
+    def get_queryset(self, request, *args, **kwargs):
+        unit = get_object_or_404(Unit, id=kwargs.get('unit_id'), course__student=request.user)
+        return Task.objects.filter(unit=unit)
+
+class TaskDetailView(BaseDetailView):
+    model = Task
+    serializer_class = TaskSerializer
+    related_models = ['course', 'unit']
+
 
 class RegisterView(APIView):
     permission_classes = [permissions.AllowAny]
