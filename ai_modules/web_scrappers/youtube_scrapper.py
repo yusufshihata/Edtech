@@ -1,7 +1,12 @@
+import os
+from dotenv import load_dotenv
 from googleapiclient.discovery import build
 
-# Replace this with your API key
-API_KEY = "AIzaSyB7eqRjPjX-QztmumE_JAdnLEFXgFvQ1yQ"
+# Load .env module
+load_dotenv()
+
+
+API_KEY = os.getenv('API_KEY')
 
 # Initialize YouTube API client
 youtube = build("youtube", "v3", developerKey=API_KEY)
