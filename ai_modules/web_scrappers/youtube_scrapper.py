@@ -47,5 +47,5 @@ if __name__ == "__main__":
         print(f"Channel: {video['channel_title']}")
         print(f"Published: {video['publish_time']}")
         print(f"URL: {video['video_url']}")
-        print(f"Description: {video['description'][:200]}...")  # Trimmed for readability
+        print(f"Description: {video['description'][:200]}...")
 
