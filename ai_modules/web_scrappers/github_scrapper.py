@@ -2,7 +2,12 @@ import requests
 import base64
 from markdown import markdown
 from bs4 import BeautifulSoup
+from dotenv import load_dotenv
+import os
 import re
+
+load_dotenv()
+PAT = os.getenv("PAT")
 
 class GithubFetcher:
     """A class organized by the builder pattern to fetch content from github."""
@@ -10,16 +15,22 @@ class GithubFetcher:
         if not hasattr(cls, 'instance'):
             cls.instance = super(GithubFetcher, cls).__new__(cls)
         return cls.instance
+
+    def __init__(self):
+        self.headers = {
+            "Authorization": f"Bearer {PAT}",
+            "Accept": "application/vnd.github.v3+json"
+        }
     
     def get_repos(self, topic, num_repos_per_page = 5):
         """This method gets the data of the repos related to this topic."""
-        request = requests.get(url=f"https://api.github.com/search/repositories?q=learn-{topic}&order=desc&per-page={num_repos_per_page}")
+        request = requests.get(url=f"https://api.github.com/search/repositories?q=learn-{topic}&order=desc&per-page={num_repos_per_page}", headers=self.headers)
         response = request.json()
 
         return response['items']
 
     def get_repo_content(self, repo):
-        request = requests.get(url=("".join(repo['url']) + '/contents/README.md'))
+        request = requests.get(url=("".join(repo['url']) + '/contents/README.md'), headers=self.headers)
         try:
             response = request.json()['content']
             return response
