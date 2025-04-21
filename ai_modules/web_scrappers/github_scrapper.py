@@ -4,44 +4,92 @@ from markdown import markdown
 from bs4 import BeautifulSoup
 import re
 
-request = requests.get(url='https://api.github.com/search/repositories?q=learn-database&order=desc&per-page=1')
-
-response = request.json()
-response = response['items']
-
-def readme_preprocessing(readme):
-    # Content decoding
-    content = base64.b64decode(readme['content'])
-
-    # Converting the markdown to html
-    html = markdown(content)
-
-    # Parse the html version of the readme
-    soup = BeautifulSoup(html, "html.parser")
-
-    # Parse the content of the html file
-    content = soup.get_text()
-
-    # Get the content in lines and paragraphs
-    lines = (line.strip() for line in content.splitlines())
-    chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
-    text = '\n'.join(chunk for chunk in chunks if chunk)
+class GithubFetcher:
+    """A class organized by the builder pattern to fetch content from github."""
+    def __new__(cls):
+        if not hasattr(cls, 'instance'):
+            cls.instance = super(GithubFetcher, cls).__new__(cls)
+        return cls.instance
     
-    # Remove the escape patterns from the document
-    escape_pattern = r'\\x[0-9a-fA-F]{2}'
-    cleaned_text = re.sub(escape_pattern, '', text)
-    cleaned_text = re.sub('#', '', cleaned_text)
-    cleaned_text = cleaned_text.replace('\\n', "")
+    def get_repos(self, topic, num_repos_per_page = 5):
+        """This method gets the data of the repos related to this topic."""
+        request = requests.get(url=f"https://api.github.com/search/repositories?q=learn-{topic}&order=desc&per-page={num_repos_per_page}")
+        response = request.json()
 
-    # Return the cleaned version of the readme file
-    return cleaned_text
+        return response['items']
 
-for repo in response:
-    print(f"Name: {repo['full_name']}")
-    print(f"Description: {repo['description']}")
-    print(f"URL: {repo['url']}")
-    new_request = requests.get(url=("".join(repo['url']) + "/contents/README.md"))
-    new_response = new_request.json()
-    print(readme_preprocessing(new_response))
-    break
+    def get_repo_content(self, repo):
+        request = requests.get(url=("".join(repo['url']) + '/contents/README.md'))
+        try:
+            response = request.json()['content']
+            return response
+        except KeyError:
+            return None
+
+    def repo_formater(self, repo, content):
+        return {"name": repo['name'], "description": repo['description'], "url": repo['url'], "content": content}
+
+    def fetching(self, topic):
+        repos = list()
+        repos_data = self.get_repos(topic)
+
+        for data in repos_data:
+            print(data['url'])
+            content = self.get_repo_content(data)
+            repo = self.repo_formater(data, content)
+            repos.append(repo)
+        return repos
+
+class ReadmePreprocessor:
+    """A class organized by the builder pattern designed to preprocess the Readme.md files from github."""
+
+    def __new__(cls):
+        if not hasattr(cls, 'instance'):
+            cls.instance = super(ReadmePreprocessor, cls).__new__(cls)
+        return cls.instance
+    
+    def decoder(self, content):
+        return base64.b64decode(content)
+
+    def text_parser(self, content):
+        html = markdown(content)
+        soup = BeautifulSoup(html, "html.parser")
+
+        content = soup.get_text()
+
+        return content
+
+    def formatter(self, content):
+        lines = (line.strip() for line in content.splitlines())
+        chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
+        content = '\n'.join(chunk for chunk in chunks if chunk)
+        return content
+
+    def cleaner(self, content):
+        patterns_to_remove = [r'\\x[0-9a-fA-F]{2}', '#', '\\n', '\\n-', '-']
+
+        for pattern in patterns_to_remove:
+            content = re.sub(pattern, '', content)
+        return content
+
+    def preprocessing(self, content):
+        content = self.decoder(content)
+        content = self.text_parser(content)
+        content = self.formatter(content)
+        content = self.cleaner(content)
+
+        return content
+
+def fetch_github_data(topic):
+    data_fetcher = GithubFetcher()
+    preprocessor = ReadmePreprocessor()
+
+    fetched_repos = data_fetcher.fetching(topic)
+    for repo in fetched_repos:
+        if repo['content'] is not None:
+            repo['content'] = preprocessor.preprocessing(repo['content'])
+        else:
+            continue
+
+    return fetched_repos
 
