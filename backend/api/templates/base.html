@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Student Portal{% endblock %}</title>
+    <title>{% block title %}Learner Portal{% endblock %}</title>
     <style>
         :root {
             --primary-color: #4a6fdc;
@@ -215,7 +215,7 @@
 <body>
     <nav class="navbar">
         <div class="container">
-            <a href="/" class="navbar-brand">Student Portal</a>
+            <a href="/" class="navbar-brand">Learner Portal</a>
             <ul class="navbar-menu">
                 {% if request.user.is_authenticated %}
                     <li><a href="{% url 'user-detail' %}">Profile</a></li>
@@ -236,7 +236,7 @@
     
     <footer class="footer">
         <div class="container">
-            <p>&copy; {% now "Y" %} Student Portal. All rights reserved.</p>
+            <p>&copy; {% now "Y" %} Learner Portal. All rights reserved.</p>
         </div>
     </footer>
 </body>

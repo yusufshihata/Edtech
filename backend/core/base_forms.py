@@ -10,9 +10,9 @@ class BaseForm(forms.Form):
 
     Subclasses Must Define:
         model (Model): The Django model class this form operates on.
-        required_context (list): Context variables required for form operation (e.g., ['user', 'course']).
+        required_context (list): Context variables required for form operation (e.g., ['user', 'Skill']).
         context_to_field_map (dict): Mapping from context variable names to model field names
-                                    (e.g., {'user': 'student'}).
+                                    (e.g., {'user': 'Learner'}).
 
     Key Features:
         1. Context Handling:
@@ -30,14 +30,14 @@ class BaseForm(forms.Form):
         save: Persists form data to model instance, incorporating context values
 
     Usage Example:
-        class CourseForm(BaseForm):
-            model = Course
+        class SkillForm(BaseForm):
+            model = Skill
             required_context = ['user']
-            context_to_field_map = {'user': 'student'}
+            context_to_field_map = {'user': 'Learner'}
             # ... form fields and custom validation ...
 
         # In view:
-        form = CourseForm(data=request.data, user=request.user)
+        form = SkillForm(data=request.data, user=request.user)
         if form.is_valid():
             instance = form.save()
 

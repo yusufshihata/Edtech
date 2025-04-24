@@ -83,7 +83,7 @@ WSGI_APPLICATION = 'edtech.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'edtechdb',
+        'NAME': 'menai',
         'USER': 'postgres',
         'PASSWORD': '66426642',
         'HOST': 'localhost',

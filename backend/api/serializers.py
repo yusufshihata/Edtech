@@ -2,11 +2,11 @@ from rest_framework import serializers
 from django.db import transaction
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
-from .models import Student, Unit, Course, Task
+from .models import Learner, Unit, Skill, Task
 from django.utils import timezone
 
-class StudentSerializer(serializers.ModelSerializer):
-    birth_date = serializers.DateField(source='student.birth_date', read_only=True)
+class LearnerSerializer(serializers.ModelSerializer):
+    birth_date = serializers.DateField(source='Learner.birth_date', read_only=True)
 
     class Meta:
         model = User
@@ -19,12 +19,12 @@ class UnitSerializer(serializers.ModelSerializer):
         fields = ['title']
 
 
-class CourseSerializer(serializers.ModelSerializer):
+class SkillSerializer(serializers.ModelSerializer):
     units = UnitSerializer(many=True, read_only=True)
-    student = StudentSerializer(many=False, read_only=True)
+    Learner = LearnerSerializer(many=False, read_only=True)
     class Meta:
-        model = Course
-        fields = ['name', 'mid_deadline', 'final_deadline', 'units', 'student']
+        model = Skill
+        fields = ['name', 'mid_deadline', 'final_deadline', 'units', 'Learner']
 
         def validate_mid_deadline(self, value):
             if value and value < timezone.now().date():
@@ -37,17 +37,17 @@ class CourseSerializer(serializers.ModelSerializer):
             return value
 
         def validate(self, data):
-            student = self.context.get('student')
+            Learner = self.context.get('Learner')
 
-            if not student:
-                raise serializers.ValidationError("Student Context is missing for validation.")
+            if not Learner:
+                raise serializers.ValidationError("Learner Context is missing for validation.")
 
-            course_name = data.get('name')
+            Skill_name = data.get('name')
 
-            query = Course.objects.filter(user=student, name=course_name)
+            query = Skill.objects.filter(user=Learner, name=Skill_name)
 
             if query.exists():
-                raise serializers.ValidationError(f"You're already have a course with the name {course_name}")
+                raise serializers.ValidationError(f"You're already have a Skill with the name {Skill_name}")
             
             return data
 
@@ -94,9 +94,9 @@ class RegisterSerializer(serializers.Serializer):
         user = User.objects.create_user(password=password, **validated_data)
 
         try:
-            Student.objects.create(user=user, birth_date=birth_date)
+            Learner.objects.create(user=user, birth_date=birth_date)
         except Exception as e:
-            raise serializers.ValidationError(f"Failed to create student profile: {e}")
+            raise serializers.ValidationError(f"Failed to create Learner profile: {e}")
 
         return user
 

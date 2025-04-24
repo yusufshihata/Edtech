@@ -1,12 +1,12 @@
 from django import forms
 from django.utils import timezone
 from core.base_forms import BaseForm
-from .models import Course, Unit, Task
+from .models import Skill, Unit, Task
 
-class CourseForm(BaseForm):
+class SkillForm(BaseForm):
     required_context = ['user']
-    model = Course
-    context_to_field_map = {'user': 'student'}
+    model = Skill
+    context_to_field_map = {'user': 'Learner'}
     
     name = forms.CharField(max_length=100)
     mid_deadline = forms.DateField()
@@ -21,7 +21,7 @@ class CourseForm(BaseForm):
 
     def clean(self):
         cleaned_data = super().clean()
-        student = self.context['user']
+        Learner = self.context['user']
 
         mid = cleaned_data.get('mid_deadline')
         final = cleaned_data.get('final_deadline')
@@ -29,25 +29,25 @@ class CourseForm(BaseForm):
         # Validate if the deadlines are logically set
         self._validate_deadlines(mid, final)
         
-        # Validate if the course is unique for this user
+        # Validate if the Skill is unique for this user
         self._validate_unique(
-            model=Course,
-            filters={'name': cleaned_data.get('name'), 'student': student},
-            error_message=f"You already have a course named {cleaned_data.get('name')}",
+            model=Skill,
+            filters={'name': cleaned_data.get('name'), 'Learner': Learner},
+            error_message=f"You already have a Skill named {cleaned_data.get('name')}",
             field='name'
         )
 
         return cleaned_data
 
 class UnitForm(BaseForm):
-    required_context = ['course']
+    required_context = ['Skill']
     model = Unit
     title = forms.CharField(max_length=100)
-    context_to_field_map = {'course': 'course'}
+    context_to_field_map = {'Skill': 'Skill'}
 
     def clean(self):
         cleaned_data = super().clean()
-        course = self.context['course']
+        Skill = self.context['Skill']
 
         # Validate deadline if provided
         if deadline := cleaned_data.get('deadline'):
@@ -57,8 +57,8 @@ class UnitForm(BaseForm):
         # Unique Unit validation
         self._validate_unique(
             model=Unit,
-            filters={'title': cleaned_data.get('title'), 'course': course},
-            error_message=f"Unit {cleaned_data.get('title')} already exists in this course.",
+            filters={'title': cleaned_data.get('title'), 'Skill': Skill},
+            error_message=f"Unit {cleaned_data.get('title')} already exists in this Skill.",
             field='title'
         )
 
@@ -66,8 +66,8 @@ class UnitForm(BaseForm):
 
 class TaskForm(BaseForm):
     model = Task
-    required_context = ['unit', 'course']
-    context_to_field_map = {'course': 'course', 'unit': 'unit'}
+    required_context = ['unit', 'Skill']
+    context_to_field_map = {'Skill': 'Skill', 'unit': 'unit'}
     
     title = forms.CharField(max_length=100)
     deadline = forms.DateField(required=False)

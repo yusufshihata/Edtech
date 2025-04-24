@@ -17,20 +17,20 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='Student',
+            name='Learner',
             fields=[
                 ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, primary_key=True, serialize=False, to=settings.AUTH_USER_MODEL)),
                 ('birth_date', models.DateField()),
             ],
         ),
         migrations.CreateModel(
-            name='Course',
+            name='Skill',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('name', models.CharField(max_length=100)),
                 ('mid_deadline', models.DateField()),
                 ('final_deadline', models.DateField()),
-                ('student', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to=settings.AUTH_USER_MODEL)),
+                ('Learner', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to=settings.AUTH_USER_MODEL)),
             ],
         ),
         migrations.CreateModel(
@@ -38,7 +38,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('title', models.CharField(max_length=100)),
-                ('course', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to='api.course')),
+                ('Skill', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to='api.Skill')),
             ],
         ),
         migrations.CreateModel(
@@ -48,7 +48,7 @@ class Migration(migrations.Migration):
                 ('title', models.CharField(max_length=100)),
                 ('deadline', models.DateField(default=django.utils.timezone.now)),
                 ('done', models.BooleanField(default=False)),
-                ('course', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to='api.course')),
+                ('Skill', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to='api.Skill')),
                 ('unit', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to='api.unit')),
             ],
         ),

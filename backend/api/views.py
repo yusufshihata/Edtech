@@ -5,65 +5,65 @@ from django.contrib.auth import login, logout
 from rest_framework.views import APIView
 from rest_framework import permissions
 from core.base_views import BaseListView, BaseDetailView
-from .models import Course, Unit, Task
-from .serializers import CourseSerializer, LoginSerializer, RegisterSerializer, StudentSerializer, UnitSerializer, TaskSerializer
-from .forms import CourseForm, UnitForm, TaskForm
+from .models import Skill, Unit, Task
+from .serializers import SkillSerializer, LoginSerializer, RegisterSerializer, LearnerSerializer, UnitSerializer, TaskSerializer
+from .forms import SkillForm, UnitForm, TaskForm
 
 # List Views
-class CoursesListView(BaseListView):
-    model = Course
-    serializer_class = CourseSerializer
-    form_class = CourseForm
+class SkillsListView(BaseListView):
+    model = Skill
+    serializer_class = SkillSerializer
+    form_class = SkillForm
 
 class UnitsListView(BaseListView):
     model = Unit
     serializer_class = UnitSerializer
     form_class = UnitForm
-    parent_models = [('course', Course)]
+    parent_models = [('Skill', Skill)]
 
     def get_queryset(self, request, *args, **kwargs):
-        course = get_object_or_404(Course, id=kwargs.get('course_id'), student=request.user)
-        return Unit.objects.filter(course=course)
+        Skill = get_object_or_404(Skill, id=kwargs.get('Skill_id'), Learner=request.user)
+        return Unit.objects.filter(Skill=Skill)
 
 class TasksListView(BaseListView):
     model = Task
     serializer_class = TaskSerializer
     form_class = TaskForm
-    parent_models = [('course', Course), ('unit', Unit)]
+    parent_models = [('Skill', Skill), ('unit', Unit)]
 
     def get_queryset(self, request, *args, **kwargs):
             unit_id = kwargs.get('unit_id')
-            course_id = kwargs.get('course_id')
-            if unit_id is None or course_id is None:
-                raise Http404("URL must contain course_id and unit_id.")
+            Skill_id = kwargs.get('Skill_id')
+            if unit_id is None or Skill_id is None:
+                raise Http404("URL must contain Skill_id and unit_id.")
 
             unit = get_object_or_404(
                 Unit,
                 id=unit_id,
-                course_id=course_id,
-                course__student=request.user
+                Skill_id=Skill_id,
+                Skill__Learner=request.user
             )
             return Task.objects.filter(unit=unit)
 
 # Details Views
-class CourseDetailView(BaseDetailView):
-    model = Course
-    serializer_class = CourseSerializer
+class SkillDetailView(BaseDetailView):
+    model = Skill
+    serializer_class = SkillSerializer
 
 
     def get_queryset(self, request, *args, **kwargs):
-        course = get_object_or_404(Course, id=kwargs.get('course_id'), student=request.user)
-        return Unit.objects.filter(course=course)
+        Skill = get_object_or_404(Skill, id=kwargs.get('Skill_id'), Learner=request.user)
+        return Unit.objects.filter(Skill=Skill)
 
 class UnitDetailView(BaseDetailView):
     model = Unit
     serializer_class = UnitSerializer
-    parent_models = [('course', Course)]
+    parent_models = [('Skill', Skill)]
 
 class TaskDetailView(BaseDetailView):
     model = Task
     serializer_class = TaskSerializer
-    parent_models = [('course', Course), ('unit', Unit)]
+    parent_models = [('Skill', Skill), ('unit', Unit)]
 
 
 class RegisterView(APIView):
@@ -120,6 +120,6 @@ class UserDetailView(APIView):
     permission_classes = [permissions.IsAuthenticated]
     
     def get(self, request):
-        user_data = StudentSerializer(request.user).data
+        user_data = LearnerSerializer(request.user).data
         return render(request, 'user_detail.html', {'user': user_data})
 

@@ -15,8 +15,8 @@ class BaseListView(APIView):
     Handles GET requests to list resources and POST requests to create a new resource.
 
     List Filtering:
-    - The base `get_queryset` method filters instances by `student=request.user`.
-      This assumes the model has a `student` field linked to the user.
+    - The base `get_queryset` method filters instances by `Learner=request.user`.
+      This assumes the model has a `Learner` field linked to the user.
     - For nested resources (defined in `parent_models`), subclasses should
       override `get_queryset` to further filter the results based on the
       parent objects found using URL keyword arguments like `{param_name}_id`.
@@ -27,13 +27,13 @@ class BaseListView(APIView):
     - If `parent_models` are defined, it fetches the parent objects based on
       URL kwargs (`{param_name}_id`) using `get_form_context` and passes
       them as keyword arguments to the form's `__init__` method.
-      Parent objects fetched this way are also filtered by `student=request.user`.
+      Parent objects fetched this way are also filtered by `Learner=request.user`.
 
     Nested Resources:
     - Supported via the `parent_models` attribute: a list of tuples
-      `(param_name, ParentModel)`, e.g., `[('course', Course)]`.
+      `(param_name, ParentModel)`, e.g., `[('Skill', Skill)]`.
     - The view expects corresponding URL keyword arguments like `{param_name}_id`
-      (e.g., `course_id`) in `self.kwargs` to identify parent instances.
+      (e.g., `Skill_id`) in `self.kwargs` to identify parent instances.
 
     Subclasses must define:
     - `model`: The Django model class this view operates on.
@@ -58,15 +58,15 @@ class BaseListView(APIView):
     parent_models = []
 
     def get_queryset(self, request, *args, **kwargs):
-        """Get the queryset filtered by user. Assumes direct 'student' field.
+        """Get the queryset filtered by user. Assumes direct 'Learner' field.
            Subclasses for nested resources MUST override this."""
-        if not hasattr(self.model, 'student'):
+        if not hasattr(self.model, 'Learner'):
              raise ImproperlyConfigured(
                  f"{self.__class__.__name__} uses default get_queryset, but model "
-                 f"{self.model.__name__} lacks 'student' field. Override get_queryset "
+                 f"{self.model.__name__} lacks 'Learner' field. Override get_queryset "
                  f"for nested resources like Units or Tasks."
              )
-        return self.model.objects.filter(student=request.user)
+        return self.model.objects.filter(Learner=request.user)
     
     def get(self, request, *args, **kwargs):
         queryset = self.get_queryset(request, *args, **kwargs)
@@ -138,12 +138,12 @@ class BaseListView(APIView):
                                raise ImproperlyConfigured(f"Cannot filter {parent_model.__name__} by {prev_param}: Previous parent not yet fetched.")
                  except FieldDoesNotExist: pass
 
-            # Enforce 'student' ownership on the top-level parent
+            # Enforce 'Learner' ownership on the top-level parent
             if self.parent_models and param_name == self.parent_models[0][0]:
-                 if hasattr(parent_model, 'student'):
-                     current_parent_lookup_filters['student'] = request.user
+                 if hasattr(parent_model, 'Learner'):
+                     current_parent_lookup_filters['Learner'] = request.user
                  else:
-                     raise ImproperlyConfigured(f"Top-level parent {parent_model.__name__} in {self.__class__.__name__} requires a 'student' field for ownership check.")
+                     raise ImproperlyConfigured(f"Top-level parent {parent_model.__name__} in {self.__class__.__name__} requires a 'Learner' field for ownership check.")
 
             try:
                 parent_obj = get_object_or_404(parent_qs, **current_parent_lookup_filters)
@@ -166,7 +166,7 @@ class BaseDetailView(APIView):
     Base API view for single-instance operations (Retrieve, Update, Delete).
 
     Retrieves the instance using a URL keyword argument dynamically generated
-    as `{model_name}_id` (e.g., `course_id` for a Course model).
+    as `{model_name}_id` (e.g., `Skill_id` for a Skill model).
 
     Ensures that nested resources (like Units, Tasks) are only retrieved if
     they belong to the specific parent instance(s) indicated in the URL,
@@ -176,8 +176,8 @@ class BaseDetailView(APIView):
     - `model`: The Django model class (e.g., Unit, Task).
     - `serializer_class`: The DRF serializer class.
     - `parent_models`: List of tuples `(param_name, ParentModel)` for nested resources.
-                       Example: `[('course', Course)]` for UnitDetailView.
-                       Example: `[('course', Course), ('unit', Unit)]` for TaskDetailView.
+                       Example: `[('Skill', Skill)]` for UnitDetailView.
+                       Example: `[('Skill', Skill), ('unit', Unit)]` for TaskDetailView.
                        Assumes parent lookup via `{param_name}_id` in URL kwargs.
     - `lookup_field` (optional): The model field used for lookup in the database
                                   (default: 'id'). This is NOT the URL kwarg name.
@@ -217,7 +217,7 @@ class BaseDetailView(APIView):
 
         # --- Fetch Parent Objects Sequentially and Add to Filters ---
         # This ensures ownership and relationship at each step
-        fetched_parents_context = {} # Store {'course': <Course obj>} for filtering Unit
+        fetched_parents_context = {} # Store {'Skill': <Skill obj>} for filtering Unit
 
         for param_name, parent_model in self.parent_models:
             parent_lookup_url_kwarg = f'{param_name}_id'
@@ -242,8 +242,8 @@ class BaseDetailView(APIView):
 
             # --- Add ownership constraint if this is the top-level parent ---
             if self.parent_models and param_name == self.parent_models[0][0]:
-                if hasattr(parent_model, 'student'):
-                    current_parent_lookup_filters['student'] = self.request.user
+                if hasattr(parent_model, 'Learner'):
+                    current_parent_lookup_filters['Learner'] = self.request.user
                 else: raise ImproperlyConfigured(...)
 
             try:
@@ -259,15 +259,15 @@ class BaseDetailView(APIView):
                  print(f"Error fetching parent {parent_model.__name__} in get_object: {e}")
                  raise Http404(f"Config error accessing parent {parent_model.__name__}.")
 
-        # --- Add Ownership Filter for Non-Nested Detail Views (e.g., CourseDetailView) ---
-        # If there are no parents, check if the target model itself should be owned by the student
-        if not self.parent_models and hasattr(self.model, 'student'):
-            filters['student'] = self.request.user # Add the student filter directly
+        # --- Add Ownership Filter for Non-Nested Detail Views (e.g., SkillDetailView) ---
+        # If there are no parents, check if the target model itself should be owned by the Learner
+        if not self.parent_models and hasattr(self.model, 'Learner'):
+            filters['Learner'] = self.request.user # Add the Learner filter directly
 
         # --- Retrieve the Target Object using combined filters ---
         try:
-            # Example for TaskDetailView: Task.objects.get(id=task_id, unit=<Unit obj>, course=<Course obj>)
-            # Example for CourseDetailView: Course.objects.get(id=course_id, student=request.user)
+            # Example for TaskDetailView: Task.objects.get(id=task_id, unit=<Unit obj>, Skill=<Skill obj>)
+            # Example for SkillDetailView: Skill.objects.get(id=Skill_id, Learner=request.user)
             obj = get_object_or_404(queryset, **filters)
         except Http404:
              denied_filters = {k:getattr(v, 'pk', v) for k,v in filters.items() if k != self.lookup_field}
